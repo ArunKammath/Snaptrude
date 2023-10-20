@@ -1,4 +1,4 @@
 # Snaptrude
 
-bug fix @ function area(p, q, r) in earcut.js
-removing vetical edge in create.je and removeEdge.js 
+bug fix in tessalator.js at _populateindices
+removing vetical edge in create.js and removeEdge.js 
