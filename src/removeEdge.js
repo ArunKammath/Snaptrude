@@ -45,6 +45,8 @@ function RemoveFromFace(brep,face,vertIdx, newFaceVerticesIdx)
     var edgesMap = brep.getEdgeMap();
     //If a half edge is already presnt between prev and next vertex,
     // then delete the half edge of vert1Idx and return.
+    var startEdge;
+    var prevEdge;
     if(edgesMap[key0] !=undefined && edgesMap[key1]!=undefined)
     {
         var lastHalfEdge = startHalfEdge;
@@ -53,7 +55,13 @@ function RemoveFromFace(brep,face,vertIdx, newFaceVerticesIdx)
             lastHalfEdge=lastHalfEdge.getNextHalfEdge();
         }
         startHalfEdge.setNextHalfEdge(undefined);
+        startHalfEdge.setFace(undefined);
+        startEdge = startHalfEdge.getEdge();
+        startEdge.setHalfEdge(undefined);
         prevHalfEdge.setNextHalfEdge(undefined);
+        prevHalfEdge.setFace(undefined);
+        prevEdge = prevHalfEdge.getEdge();
+        prevEdge.setHalfEdge(undefined);
         lastHalfEdge.setNextHalfEdge(lastHalfEdge);
         lastHalfEdge.setFace(undefined);
         face.setHalfEdge(lastHalfEdge);
@@ -90,10 +98,14 @@ function RemoveFromFace(brep,face,vertIdx, newFaceVerticesIdx)
     //complete the new loop
     nextHalfEdge.setNextHalfEdge(halfEdge);
     // detach vert1Idx from the loop.
+    prevEdge = prevHalfEdge.getEdge();
+    prevEdge.setHalfEdge(undefined);
     prevHalfEdge.setNextHalfEdge(undefined);
+    prevHalfEdge.setFace(undefined);
+    startEdge = startHalfEdge.getEdge();
+    startEdge.setHalfEdge(undefined);
     startHalfEdge.setNextHalfEdge(undefined);
-
-     
+    startHalfEdge.setFace(undefined);    
 
 };
 function CreateFace(brep, newFaceVerticesIdx)
@@ -124,23 +136,34 @@ function CreateFace(brep, newFaceVerticesIdx)
             k=0;
     }
 
+    var edgeMap = brep.getEdgeMap();
+    var vertices = brep.getVertices();
+    var halfEdges = brep.getHalfEdges();
+    var faceVertices = Array.from(orderedVerticesIdx);
+    var firstVertexIdx  = newFaceVerticesIdx[faceVertices[0]];
+    var secondVertexIdx = newFaceVerticesIdx[faceVertices[1]];
+    var dirEdge = edgeMap[ firstVertexIdx + '-' +secondVertexIdx];
+    var dirHalfEdge = dirEdge.getHalfEdge();
+    var vertIdx = dirHalfEdge.getVertex().getIndex();
+    if(vertIdx == firstVertexIdx) // new face vertices loop should be opposite direction of existing half edge.
+    {
+        faceVertices.reverse();
+    }
     //Creating New Face
     var face = new Face();
     face.setIndex(faces.length);
     faces.push(face);
-    var edgeMap = brep.getEdgeMap();
-    var vertices = brep.getVertices();
+    
 
     var prevHalfEdge = undefined;
-    var firstHalfEdge = undefined;
-    var faceVertices = Array.from(orderedVerticesIdx);
+    var firstHalfEdge = undefined;    
     var flen = faceVertices.length;
     for( var i = 0; i < flen; i++ ) {
-        var vertexIndexCurr = faceVertices[ i ];
-        var vertexIndexNext = faceVertices[ ( i + 1 ) % flen ];
+        var vertexIndexCurr = newFaceVerticesIdx[faceVertices[ i ]];
+        var vertexIndexNext = newFaceVerticesIdx[faceVertices[ ( i + 1 ) % flen ]];
 
         var edge = edgeMap[ vertexIndexCurr + '-' + vertexIndexNext ];
-        var vertexIdx = newFaceVerticesIdx[ vertexIndexCurr ];
+        var vertexIdx =  vertexIndexCurr ;
         var vertex = vertices[vertexIdx];
         
         //Set Half Edge Properties
@@ -148,6 +171,13 @@ function CreateFace(brep, newFaceVerticesIdx)
         halfedge.setVertex( vertex );
         halfedge.setFace( face );
         halfedge.setEdge( edge );
+        halfEdges.push(halfedge);
+        var flipHalfEdge = edge.getHalfEdge();
+        halfedge.setFlipHalfEdge(flipHalfEdge); 
+        if(flipHalfEdge.getFlipHalfEdge() == undefined)
+        {
+            flipHalfEdge.setFlipHalfEdge(halfedge);
+        }
 
         if( prevHalfEdge !== undefined ) {
             prevHalfEdge.setNextHalfEdge( halfedge );
@@ -178,5 +208,50 @@ export function removeVerticalEdge(brep, vert1Idx,vert2Idx)
             newFaceVerticesIdx.splice(i,1);
     }
     CreateFace(brep, newFaceVerticesIdx);
+
+    // Remove unwanted halfEdges.
+    var halfEdges = brep.getHalfEdges();
+    var newHalfEdges = [];
+    for( var i=0;i<halfEdges.length;i++)
+    {
+        if(halfEdges[i].getFace()==undefined)
+            delete halfEdges[i];
+        else
+            newHalfEdges.push(halfEdges[i]);
+    }
+    brep.halfEdges = newHalfEdges;
+
+    //Remove unwanted edges
+    var edges = brep.getEdges();
+    var newEdges = [];
+    for( var i=0;i<edges.length;i++)
+    {
+        if(edges[i].getHalfEdge()==undefined)
+            delete edges[i];
+        else
+        {
+            edges[i].setIndex(newEdges.length);
+            newEdges.push(edges[i]);
+        }
+    }
+    brep.edges = newEdges;
+
+    //Remove unwanted faces
+    var faces = brep.getFaces();
+    var newFaces = [];
+    {
+        for(var i=0;i<faces.length;i++)
+        {
+            var faceVertices = FaceVertices(faces[i]);
+            if(faceVertices.length<3)
+                delete faces[i];
+            else
+            {
+                faces[i].setIndex(newFaces.length);
+                newFaces.push(faces[i]);
+            } 
+        }
+    }
+    brep.faces = newFaces;
 };
 

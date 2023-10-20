@@ -1,7 +1,10 @@
-import { Color3, Color4, CreateBox, StandardMaterial } from "@babylonjs/core";
+import { Color3, Color4, CreateBox, CreateSphere, StandardMaterial } from "@babylonjs/core";
 import Mesh from "mda/mda/Core/Mesh";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import Tessellator from "./Tessellator";
 import { removeVerticalEdge } from "./removeEdge";
+
+
 
 export const addMesh = (scene) => {
   let brep = new Mesh();
@@ -62,7 +65,7 @@ export const addMesh = (scene) => {
   brep.setPositions(positions);
   brep.setCells(cells);
   brep.process();
-  removeVerticalEdge(brep, 1, 5); // Insert the vertex indices of the edge to be deleted. (insert a valid edge)
+  removeVerticalEdge(brep, 2, 6); // Insert the vertex indices of the edge to be deleted. (insert a valid edge)
   
 
   const tessellator = new Tessellator();
@@ -84,5 +87,4 @@ export const addMesh = (scene) => {
   mesh.edgesColor = new Color4(0, 0, 0, 1);
 
   mesh.material = material;
-  
 };

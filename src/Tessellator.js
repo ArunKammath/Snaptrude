@@ -90,6 +90,23 @@ class Tessellator {
 
     facePositions.forEach((vertex) => earcutPath.push(...vertex));
 
+    var yCoord = earcutPath[1];
+    var same=1;
+    for( var i=1;i<earcutPath.length;i+=3)
+    {
+        if(yCoord != earcutPath[i])
+          same=0;
+    }
+    if(same ==1)
+    {
+        for(var i=1;i<earcutPath.length; i+=3)
+        {
+            var temp = earcutPath[i];
+            earcutPath[i] =earcutPath[i+1];
+            earcutPath[i+1]=temp;
+        }
+    }
+
     let triangles = earcut (earcutPath, [], 3);
 
     for (let point of triangles){

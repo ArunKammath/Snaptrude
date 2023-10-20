@@ -4,7 +4,6 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { Scene } from "@babylonjs/core/scene";
-
 import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 import { addMesh } from "./create";
 
