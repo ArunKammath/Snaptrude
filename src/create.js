@@ -1,10 +1,25 @@
-import { Color3, Color4, CreateBox, CreateSphere, StandardMaterial } from "@babylonjs/core";
+import { Color3, Color4, CreateBox, ActionManager,ExecuteCodeAction, StandardMaterial } from "@babylonjs/core";
 import Mesh from "mda/mda/Core/Mesh";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import Tessellator from "./Tessellator";
-import { removeVerticalEdge } from "./removeEdge";
+import { removeVerticalEdge, CheckEdge } from "./removeEdge";
+import { FaceVertices } from "mda";
 
 
+function DisplayGeometry(tessellator,mesh,brep,scene)
+{
+  const { geometry, faceFacetMapping } = tessellator.tessellate(brep, scene);
+  if (!geometry) return;
+
+  const material = new StandardMaterial("material", scene);
+  material.diffuseColor = new Color3(0.8, 0.8, 0.8);
+  material.backFaceCulling = false;
+
+  geometry.applyToMesh(mesh);
+  mesh.enableEdgesRendering();
+  mesh.edgesColor = new Color4(0, 0, 0, 1);
+  mesh.material = material;
+}
 
 export const addMesh = (scene) => {
   let brep = new Mesh();
@@ -65,7 +80,7 @@ export const addMesh = (scene) => {
   brep.setPositions(positions);
   brep.setCells(cells);
   brep.process();
-  removeVerticalEdge(brep, 2, 6); // Insert the vertex indices of the edge to be deleted. (insert a valid edge)
+  //removeVerticalEdge(brep, 2, 6); // Insert the vertex indices of the edge to be deleted. (insert a valid edge)
   
 
   const tessellator = new Tessellator();
@@ -75,16 +90,35 @@ export const addMesh = (scene) => {
     updatable: true,
   }, scene);
 
-  const { geometry, faceFacetMapping } = tessellator.tessellate(brep, scene);
-  if (!geometry) return;
+  
+  mesh.actionManager = new ActionManager(scene);
+  mesh.actionManager.registerAction(
+    new ExecuteCodeAction(
+        {
+            trigger: ActionManager.OnPickTrigger
+        },
+        function () 
+        {
+            var pickingInfo = scene.pick(scene.pointerX,scene.pointerY);
+            if(pickingInfo.hit)
+            {
+              var hitPoint = pickingInfo.pickedPoint;                   // point clicked by mouse
+              var faces = brep.getFaces();  
+              var facetId = pickingInfo.faceId;           
+              var face = faces[Math.floor(facetId/2)];
+              var faceVertices = FaceVertices(face);
+              var edgeIndices = CheckEdge(brep, faceVertices, hitPoint);// Return the vertex indces of edge that needs to be removed
+              if(edgeIndices.length>0)
+              {
+                removeVerticalEdge(brep,edgeIndices[0],edgeIndices[1]);
+                DisplayGeometry(tessellator,mesh,brep,scene);               
 
-  const material = new StandardMaterial("material", scene);
-  material.diffuseColor = new Color3(0.8, 0.8, 0.8);
-  material.backFaceCulling = false;
+              }
+            }
+        }
+    )
+  );
+  
+  DisplayGeometry(tessellator,mesh,brep,scene);
 
-  geometry.applyToMesh(mesh);
-  mesh.enableEdgesRendering();
-  mesh.edgesColor = new Color4(0, 0, 0, 1);
-
-  mesh.material = material;
 };

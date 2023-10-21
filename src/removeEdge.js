@@ -4,7 +4,42 @@ import FaceVertices from "mda/mda/Queries/FaceVertices";
 import HalfEdge from "mda/mda/Core/HalfEdge";
 import Edge from "mda/mda/Core/Edge";
 import Face from "mda/mda/Core/Face";
+//import { math } from "@babylonjs/core/Maths/math.vector";
 
+export function CheckEdge(brep, faceVertices, pickedPoint)
+{
+    //Checks whether the selected point lies on the edge.
+    //if so the vertices of the edge is returned, else nothing.
+    var point = [];
+    var edgeIndices = [];
+    point.push(pickedPoint._x);
+    point.push(pickedPoint._y);
+    point.push(pickedPoint._z);
+    var positions = brep.getPositions();
+    var l1,l2,ledge;
+    // l1 - distance of point from vert1
+    // l2 - distance of point from vert2
+    // ledge - length of edge between vert1 and vert2.
+    // if a point is clicked very close to an edge then sum of distance of point to the vertices will be roughly equal to edge length.
+    // tolerance of 5% is assumed (l1+l2<1.05*ledge) 
+    for(var i=0;i<faceVertices.length;i++)
+    {   
+        var vert1Idx =faceVertices[i].getIndex();
+        var vert2Idx = faceVertices[(i+1)%faceVertices.length].getIndex();
+        var vert1 = positions[vert1Idx];
+        var vert2 = positions[vert2Idx];
+        l1 = Math.sqrt(Math.pow((vert1[0]-point[0]),2) + Math.pow((vert1[1]-point[1]),2) + Math.pow((vert1[2]-point[2]),2));
+        l2 = Math.sqrt(Math.pow((vert2[0]-point[0]),2) + Math.pow((vert2[1]-point[1]),2) + Math.pow((vert2[2]-point[2]),2));
+        ledge = Math.sqrt(Math.pow((vert2[0]-vert1[0]),2) + Math.pow((vert2[1]-vert1[1]),2) + Math.pow((vert2[2]-vert1[2]),2));
+        if(l1+l2 <1.05*ledge)
+        {
+            edgeIndices.push(vert1Idx);
+            edgeIndices.push(vert2Idx);
+        }
+    }
+    return edgeIndices;
+
+}
 function RemoveFromFace(brep,face,vertIdx, newFaceVerticesIdx)
 {
     // check whether the vertex is part of the face.

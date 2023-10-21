@@ -37,7 +37,7 @@ var ground = CreateGround("ground1", { width: 60, height: 60, subdivisions: 2 },
 // Affect a material
 ground.material = material;
 
-addMesh();
+addMesh(scene);
 
 window.scene = scene;
 
